@@ -112,6 +112,17 @@ end''')
 			ip = shutit.send_and_get_output('''vagrant landrush ls 2> /dev/null | grep -w ^''' + machines[machine]['fqdn'] + ''' | awk '{print $2}' ''')
 			machines.get(machine).update({'ip':ip})
 
+		# Set up hosts
+		for machine in sorted(machines.keys()):
+			shutit_session = shutit_sessions[machine]
+			# Set root password
+			shutit_session.send('echo root:' + root_pass + ' | /usr/sbin/chpasswd')
+			shutit_session.send('cd /root')
+			shutit_session.send('''sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config''')
+			shutit_session.send('''sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config''')
+			shutit_session.send('service sshd restart')
+			shutit_session.multisend('ssh-keygen',{'save the key':'','passphrase':''})
+
 		for machine in sorted(machines.keys()):
 			shutit_session = shutit_sessions[machine]
 			shutit_session.install('python')
@@ -140,6 +151,7 @@ end''')
 
 		shutit_session_1 = shutit_sessions['k8sbyhand1']
 		shutit_session_1.send('kubeadm config images pull')
+		shutit_session_1.pause_point('ip addr? kubeadm init --pod-network-cidr=10.244.0.0/16 2>&1 > /tmp/out')
 		shutit_session_1.send('kubeadm init --pod-network-cidr=10.244.0.0/16 2>&1 > /tmp/out')
 		join_cmd = shutit_session_1.send_and_get_output('grep kubeadm.join /tmp/out')
 		shutit_session_1.send('mkdir -p $HOME/.kube')
