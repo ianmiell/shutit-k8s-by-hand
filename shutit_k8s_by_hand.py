@@ -5,6 +5,7 @@ import logging
 import string
 import os
 import inspect
+import time
 from shutit_module import ShutItModule
 
 class shutit_k8s_by_hand(ShutItModule):
@@ -113,38 +114,14 @@ end''')
 
 		for machine in sorted(machines.keys()):
 			shutit_session = shutit_sessions[machine]
-			shutit_session.run_script(r'''#!/bin/sh
-# See https://raw.githubusercontent.com/ianmiell/vagrant-swapfile/master/vagrant-swapfile.sh
-fallocate -l ''' + shutit.cfg[self.module_id]['swapsize'] + r''' /swapfile
-ls -lh /swapfile
-chown root:root /swapfile
-chmod 0600 /swapfile
-ls -lh /swapfile
-mkswap /swapfile
-swapon /swapfile
-swapon -s
-grep -i --color swap /proc/meminfo
-echo "
-/swapfile none            swap    sw              0       0" >> /etc/fstab''')
-			shutit_session.multisend('adduser person',{'Enter new UNIX password':'person','Retype new UNIX password:':'person','Full Name':'','Phone':'','Room':'','Other':'','Is the information correct':'Y'})
-
-		for machine in sorted(machines.keys()):
-			shutit_session = shutit_sessions[machine]
 			shutit_session.install('python')
-			shutit_session.send('''cat <<- EOF >> /etc/network/interfaces
-auto ens7
-iface ens7 inet static
-    address ''' + machines[machine]['ip'] + '''
-    netmask 255.255.0.0
-    mtu 1450
-EOF''')
-			shutit_session.send('ifup ens7')
 			shutit_session.install('apt-transport-https')
 			shutit_session.install('docker.io')
 			shutit_session.send('systemctl start docker')
 			shutit_session.send('systemctl enable docker')
 			shutit_session.send('curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add')
 			shutit_session.send('echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" >/etc/apt/sources.list.d/kubernetes.list')
+			shutit_session.send('apt-get update -y')
 			shutit_session.install('kubelet')
 			shutit_session.install('kubeadm')
 			shutit_session.install('kubectl')
@@ -153,18 +130,34 @@ EOF''')
 			shutit_session.send('(sleep 10 && reboot) &')
 			shutit_session.logout()
 			shutit_session.logout()
+		import time
 		time.sleep(60)
+		# Lock back in
 		for machine in sorted(machines.keys()):
 			shutit_session = shutit_sessions[machine]
 			shutit_session.login(command='vagrant ssh ' + machine)
 			shutit_session.login(command='sudo su - ')
 
 		shutit_session_1 = shutit_sessions['k8sbyhand1']
-		shutit_session_1.send('kubeadm init --allocate-node-cidrs=true --cluster-cidr=10.244.0.0/16')
+		shutit_session_1.send('kubeadm config images pull')
+		shutit_session_1.send('kubeadm init --pod-network-cidr=10.244.0.0/16 2>&1 > /tmp/out')
+		join_cmd = shutit_session_1.send_and_get_output('grep kubeadm.join /tmp/out')
 		shutit_session_1.send('mkdir -p $HOME/.kube')
 		shutit_session_1.send('cp -i /etc/kubernetes/admin.conf $HOME/.kube/config')
 		shutit_session_1.send('chown $(id -u):$(id -g) $HOME/.kube/config')
+
+		for machine in sorted(machines.keys()):
+			if machine == 'k8sbyhand1':
+				continue
+			shutit_session = shutit_sessions[machine]
+			# Join machines
+			shutit_session.send(join_cmd.strip().replace('10.0.2.15',machines[machine]['ip']))
+
+		shutit_session_1.send('kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml')
+		shutit_session_1.send('kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel-rbac.yml')
 		shutit_session_1.pause_point('')
+
+
 		return True
 
 
