@@ -141,6 +141,7 @@ end''')
 			shutit_session.send('(sleep 10 && reboot) &')
 			shutit_session.logout()
 			shutit_session.logout()
+
 		import time
 		time.sleep(60)
 		# Lock back in
@@ -152,7 +153,7 @@ end''')
 		shutit_session_1 = shutit_sessions['k8sbyhand1']
 		shutit_session_1.send('kubeadm config images pull')
 		shutit_session_1.pause_point('ip addr? kubeadm init --pod-network-cidr=10.244.0.0/16 2>&1 > /tmp/out')
-		shutit_session_1.send('kubeadm init --pod-network-cidr=10.244.0.0/16 2>&1 > /tmp/out')
+		shutit_session_1.send('kubeadm init --apiserver-cert-extra-sans ' + machines['k8sbyhand1']['ip'] + ' --pod-network-cidr 10.244.0.0/16 2>&1 > /tmp/out')
 		join_cmd = shutit_session_1.send_and_get_output('grep kubeadm.join /tmp/out')
 		shutit_session_1.send('mkdir -p $HOME/.kube')
 		shutit_session_1.send('cp -i /etc/kubernetes/admin.conf $HOME/.kube/config')
@@ -163,7 +164,7 @@ end''')
 				continue
 			shutit_session = shutit_sessions[machine]
 			# Join machines
-			shutit_session.send(join_cmd.strip().replace('10.0.2.15',machines[machine]['ip']))
+			shutit_session.send(join_cmd.strip().replace('10.0.2.15',machines['k8sbyhand1']['ip']))
 
 		shutit_session_1.send('kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml')
 		shutit_session_1.send('kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel-rbac.yml')
