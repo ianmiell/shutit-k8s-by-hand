@@ -82,7 +82,7 @@ end''')
 			shutit_session.send('vagrant landrush rm ' + machines[machine]['fqdn'])
 			# Needs to be done serially for stability reasons.
 			try:
-				shutit_session.multisend('vagrant up --provider ' + shutit.cfg['shutit-library.virtualization.virtualization.virtualization']['virt_method'] + machine_name,{'assword for':pw,'assword:':pw})
+				shutit_session.multisend('vagrant up --provider ' + shutit.cfg['shutit-library.virtualization.virtualization.virtualization']['virt_method'] + ' ' + machine,{'assword for':pw,'assword:':pw})
 			except NameError:
 				shutit.multisend('vagrant up ' + machine,{'assword for':pw,'assword:':pw},timeout=99999)
 			if shutit.send_and_get_output("vagrant status 2> /dev/null | grep -w ^" + machine + " | awk '{print $2}'") != 'running':
@@ -122,7 +122,13 @@ end''')
 			shutit_session.send('''sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config''')
 			shutit_session.send('''sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config''')
 			shutit_session.send('service sshd restart')
-			shutit_session.multisend('ssh-keygen',{'save the key':'','passphrase':''})
+
+                                           
+		for machine in sorted(machines.keys()):
+			shutit_session = shutit_sessions[machine]
+			for to_machine in sorted(machines.keys()):
+				shutit_session.multisend('ssh-copy-id root@' + to_machine + '.vagrant.test',{'ontinue connecting':'yes','assword':root_pass})
+				shutit_session.multisend('ssh-copy-id root@' + to_machine,{'ontinue connecting':'yes','assword':root_pass})
 
 		for machine in sorted(machines.keys()):
 			shutit_session = shutit_sessions[machine]
