@@ -73,7 +73,7 @@ end''')
 		# Set up the sessions
 		shutit_sessions = {}
 		for machine in sorted(machines.keys()):
-			shutit_sessions.update({machine:shutit.create_session('bash')})
+			shutit_sessions.update({machine:shutit.create_session('bash')},loglevel='debug')
 		# Set up and validate landrush
 		for machine in sorted(machines.keys()):
 			shutit_session = shutit_sessions[machine]
@@ -151,7 +151,7 @@ end''')
 
 		import time
 		time.sleep(60)
-		# Lock back in
+		# Log back in
 		for machine in sorted(machines.keys()):
 			shutit_session = shutit_sessions[machine]
 			shutit_session.login(command='vagrant ssh ' + machine)
