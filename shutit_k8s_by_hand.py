@@ -173,6 +173,8 @@ end''')
 			# Join machines
 			shutit_session.send(join_cmd.strip().replace('10.0.2.15',machines['k8sbyhand1']['ip']))
 
+		# See: https://github.com/cloudnativelabs/kube-router/blob/master/docs/generic.md for kube-router - how is kubelet parameterized?
+		shutit_session_1.pause_point('https://github.com/cloudnativelabs/kube-router/blob/master/docs/generic.md for kube-router - how is kubelet parameterized?')
 		shutit_session_1.send('kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml')
 		shutit_session_1.send('kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel-rbac.yml')
 		shutit_session_1.pause_point('')
