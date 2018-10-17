@@ -160,7 +160,7 @@ end''')
 		shutit_session_1 = shutit_sessions['k8sbyhand1']
 		shutit_session_1.send('kubeadm config images pull')
 		# https://medium.com/@joatmon08/playing-with-kubeadm-in-vagrant-machines-36598b5e8408
-		shutit_session_1.send('kubeadm init --apiserver-cert-extra-sans ' + machines['k8sbyhand1']['ip'] + ' --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address ' + machines['k8sbyhand1']['ip'] + ' 2>&1 > /tmp/out')
+		shutit_session_1.send('kubeadm init --apiserver-cert-extra-sans ' + machines['k8sbyhand1']['ip'] + ' --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address ' + machines['k8sbyhand1']['ip'] + ' > /tmp/out 2>&1')
 		join_cmd = shutit_session_1.send_and_get_output('grep kubeadm.join /tmp/out')
 		shutit_session_1.send('mkdir -p $HOME/.kube')
 		shutit_session_1.send('cp -i /etc/kubernetes/admin.conf $HOME/.kube/config')
