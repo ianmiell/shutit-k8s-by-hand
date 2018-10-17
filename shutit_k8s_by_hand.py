@@ -157,7 +157,7 @@ end''')
 			shutit_session.login(command='vagrant ssh ' + machine)
 			shutit_session.login(command='sudo su - ')
 			# create for kube-router
-			shutit_session.send('/etc/cni/net.d')
+			shutit_session.send('mkdir -p /etc/cni/net.d')
 
 		shutit_session_1 = shutit_sessions['k8sbyhand1']
 		shutit_session_1.send('kubeadm config images pull')
